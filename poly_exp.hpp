@@ -1,4 +1,3 @@
-
 ///////////////////////////////////////////////////////////////////////////////
 // poly_exp.hpp
 //
@@ -13,6 +12,7 @@
 #include <functional>
 #include <optional>
 #include <vector>
+#include <math.h>
 
 namespace subarray {
 
@@ -114,57 +114,68 @@ summed_span max_subarray_exh(const std::vector<int>& input) {
 
 
 // problem 2
-summed_span maximum_subarray_crossing (const std::vector<int>& input, int low, int middle, int high){
-  float left_sum = right_sum = -INFINITY;
-  int sum = 0;
-  int b = 0;
-  int e = 1;
 
-  for (int i = middle; i < low; i--){
-    sum += input[i];
-    if(sum > left_sum){
+// #2
+
+summed_span max_subarray_crossing(const std::vector<int>& V, int low, int middle, int high) {
+  // make sure to include c math.
+  float left_sum = -(INFINITY);
+  float right_sum = -(INFINITY);
+
+  float sum = 0.0;
+
+  int b = 0;
+  int e = 0;
+
+  for (int i = middle; i >= low; i--) {
+    sum += V[i];
+
+    if (sum > left_sum) {
       left_sum = sum;
       b = i;
     }
   }
-  sum = 0;
-  for (int i = middle + 1; i < high; i++){
-    sum += input[i];
-    if(sum > right_sum){
+  sum = 0.0;
+  for (int i = middle + 1; i <= high; i++) {
+    sum += V[i];
+
+    if (sum > right_sum) {
       right_sum = sum;
       e = i;
     }
   }
-  return summed_span(input.begin() + b, input.begin() + e + 1);
-}
-summed_span max_subarray_recurse(const std::vector<int>& input, int low, int high){
-  if(low == high){
-    return (low, low + 1);
-  }
-  else{
-    int middle = (low + high) / 2;
-    summed_span entirely_left = maximum_subarray_recurse(input, low, middle);
-    summed_span entirely_right = maximum_subarray_recurse(input, middle + 1, high);
-    summed_span crossing = maximum_subarray_crossing(input, low, middle, high);
 
-    // return highest of the three
-  }
+  return summed_span(V.begin() + b, V.begin() + e + 1);
 }
+
+
+summed_span max_subarray_recurse(const std::vector<int>& V, int low, int high) {
+  if (low == high) return summed_span(V.begin() + low, V.begin() + (low + 1));
+
+  int middle = (low + high) / 2;
+
+  summed_span entirely_left = max_subarray_recurse(V, low, middle);
+
+  summed_span entirely_right = max_subarray_recurse(V, middle + 1, high);
+
+  summed_span crossing = max_subarray_crossing(V, low, middle, high);
+
+  if(entirely_left.sum() >= entirely_right.sum() && entirely_left.sum() >= crossing.sum()) return entirely_left;
+
+  if(entirely_right.sum() >= entirely_left.sum() && entirely_right.sum() >= crossing.sum()) return entirely_right;
+
+  if(crossing.sum() >= entirely_left.sum() && crossing.sum() >= entirely_right.sum()) return crossing;
+
+  return crossing;
+}
+
 // Compute the maximum subarray using a decrease-by-half algorithm that takes
 // O(n log n) time.
 summed_span max_subarray_dbh(const std::vector<int>& input) {
-
   assert(!input.empty());
+
   return max_subarray_recurse(input, 0, input.size() - 1);
-
-  // TODO: Rewrite the body of this function so that it actually works. That
-  // includes rewriting the return statement. After you do that, delete this
-  // comment.
-
-  //return summed_span(input.begin() + b, input.end() + e + 1);
 }
-
-
 
 
 // Solve the subset sum problem: return a non-empty subset of input that adds
@@ -173,17 +184,38 @@ summed_span max_subarray_dbh(const std::vector<int>& input) {
 // Note that the returned subset must never be empty, even if target == 0.
 // This uses an exhaustive search algorithm that takes exponential O(n * 2^n)
 // time.
+// #3
 std::optional<std::vector<int>>
 subset_sum_exh(const std::vector<int>& input, int target) {
 
-  assert(!input.empty());
-  assert(input.size() < 64);
+    assert(!input.empty());
 
-  // TODO: Rewrite the body of this function so that it actually works. That
-  // includes rewriting the return statement. After you do that, delete this
-  // comment.
-  //return std::make_optional<std::vector<int>>();
-  return std::nullopt;
+    assert(input.size() < 64);
+
+    int n = input.size();
+
+    uint64_t bits = 0;
+
+    int total_sub = 0;
+
+    for(bits = 0; bits <= pow(2,n); bits++) {
+        std::vector<int> cand;
+
+        for (int j = 0 ; j <= n - 1 ; j++) {
+            if (((bits>>j) & 1 ) == 1)
+                cand.push_back(input[j]);
+
+            total_sub = 0;
+
+            for(int i = 0; i < cand.size(); i++)
+                total_sub += cand[i];
+
+            if ((cand.size() > 0) && (total_sub == target))
+                return cand;
+        }
+    }
+
+    return std::nullopt;
  }
 
 }
